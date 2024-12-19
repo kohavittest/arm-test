@@ -1,28 +1,39 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-08-01/managementGroupDeploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.32.4.45862",
+      "templateHash": "8042343807393147952"
+    }
+  },
+  "parameters": {
+    "policyName": {
+      "type": "string"
+    },
+    "policyDisplayName": {
+      "type": "string"
+    },
+    "policyDescription": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "storageAccountId": {
+      "type": "string"
+    }
+  },
   "resources": [
     {
-      "type": "Microsoft.Authorization/policyAssignments",
-      "name": "DeployDiagnosticSettingsForKeyVault",
-      "apiVersion": "2021-06-01",
+      "type": "Microsoft.Authorization/policyDefinitions",
+      "apiVersion": "2020-09-01",
+      "name": "[parameters('policyName')]",
       "properties": {
-        "policyType": "Custom",
+        "displayName": "[parameters('policyDisplayName')]",
+        "description": "[parameters('policyDescription')]",
         "mode": "All",
-        "displayName": "Deploy Diagnostic Settings for Key Vault to Storage Account",
-        "description": "Deploys the diagnostic settings for Key Vault to stream to a regional Storage Account.",
-        "metadata": {
-          "category": "Key Vault"
-        },
-        "parameters": {
-          "storageAccountId": {
-            "type": "String",
-            "metadata": {
-              "displayName": "Storage Account Resource ID",
-              "description": "The Resource ID of the storage account where logs should be sent."
-            }
-          }
-        },
         "policyRule": {
           "if": {
             "field": "type",
@@ -63,7 +74,7 @@
                       {
                         "type": "Microsoft.Insights/diagnosticSettings",
                         "apiVersion": "2017-05-01-preview",
-                        "name": "[concat('setByPolicy-', field('name'))]",
+                        "name": "[[concat('setByPolicy-', field('name'))]",
                         "properties": {
                           "storageAccountId": "[parameters('storageAccountId')]",
                           "logs": [
@@ -71,8 +82,8 @@
                               "category": "AuditEvent",
                               "enabled": true,
                               "retentionPolicy": {
-                                "enabled": false,
-                                "days": 0
+                                "enabled": true,
+                                "days": 90
                               }
                             }
                           ]
@@ -89,8 +100,35 @@
               }
             }
           }
+        },
+        "parameters": {
+          "storageAccountId": {
+            "type": "String",
+            "metadata": {
+              "displayName": "Storage Account Resource ID",
+              "description": "The Resource ID of the storage account where logs should be sent."
+            }
+          }
+        },
+        "metadata": {
+          "category": "Key Vault"
         }
       }
+    },
+    {
+      "type": "Microsoft.Authorization/policyAssignments",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}-assignment', parameters('policyName'))]",
+      "properties": {
+        "displayName": "[parameters('policyDisplayName')]",
+        "description": "[parameters('policyDescription')]",
+        "policyDefinitionId": "[extensionResourceId(managementGroup().id, 'Microsoft.Authorization/policyDefinitions', parameters('policyName'))]",
+        "scope": "[parameters('scope')]",
+        "enforcementMode": "Default"
+      },
+      "dependsOn": [
+        "[extensionResourceId(managementGroup().id, 'Microsoft.Authorization/policyDefinitions', parameters('policyName'))]"
+      ]
     }
   ]
 }
