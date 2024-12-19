@@ -1,0 +1,96 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "resources": [
+    {
+      "type": "Microsoft.Authorization/policyAssignments",
+      "name": "DeployDiagnosticSettingsForKeyVault",
+      "apiVersion": "2021-06-01",
+      "properties": {
+        "policyType": "Custom",
+        "mode": "All",
+        "displayName": "Deploy Diagnostic Settings for Key Vault to Storage Account",
+        "description": "Deploys the diagnostic settings for Key Vault to stream to a regional Storage Account.",
+        "metadata": {
+          "category": "Key Vault"
+        },
+        "parameters": {
+          "storageAccountId": {
+            "type": "String",
+            "metadata": {
+              "displayName": "Storage Account Resource ID",
+              "description": "The Resource ID of the storage account where logs should be sent."
+            }
+          }
+        },
+        "policyRule": {
+          "if": {
+            "field": "type",
+            "equals": "Microsoft.KeyVault/vaults"
+          },
+          "then": {
+            "effect": "DeployIfNotExists",
+            "details": {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "name": "setByPolicy",
+              "existenceCondition": {
+                "allOf": [
+                  {
+                    "field": "Microsoft.Insights/diagnosticSettings/logs[*].category",
+                    "equals": "AuditEvent"
+                  },
+                  {
+                    "field": "Microsoft.Insights/diagnosticSettings/storageAccountId",
+                    "equals": "[parameters('storageAccountId')]"
+                  }
+                ]
+              },
+              "roleDefinitionIds": [
+                "/providers/microsoft.authorization/roleDefinitions/3913510d-42f4-4e42-8a64-420c390055eb"
+              ],
+              "deployment": {
+                "properties": {
+                  "mode": "incremental",
+                  "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                      "storageAccountId": {
+                        "type": "string"
+                      }
+                    },
+                    "resources": [
+                      {
+                        "type": "Microsoft.Insights/diagnosticSettings",
+                        "apiVersion": "2017-05-01-preview",
+                        "name": "[concat('setByPolicy-', field('name'))]",
+                        "properties": {
+                          "storageAccountId": "[parameters('storageAccountId')]",
+                          "logs": [
+                            {
+                              "category": "AuditEvent",
+                              "enabled": true,
+                              "retentionPolicy": {
+                                "enabled": false,
+                                "days": 0
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "storageAccountId": {
+                      "value": "[parameters('storageAccountId')]"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
