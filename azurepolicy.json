@@ -1,11 +1,11 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-08-01/managementGroupDeploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "metadata": {
     "_generator": {
       "name": "bicep",
       "version": "0.32.4.45862",
-      "templateHash": "8042343807393147952"
+      "templateHash": "1853927200950328895"
     }
   },
   "parameters": {
@@ -24,6 +24,9 @@
     "storageAccountId": {
       "type": "string"
     }
+  },
+  "variables": {
+    "splitId": "[split(parameters('storageAccountId'), '/')]"
   },
   "resources": [
     {
@@ -74,7 +77,7 @@
                       {
                         "type": "Microsoft.Insights/diagnosticSettings",
                         "apiVersion": "2017-05-01-preview",
-                        "name": "[[concat('setByPolicy-', field('name'))]",
+                        "name": "[format('setByPolicy-{0}', parameters('policyName'))]",
                         "properties": {
                           "storageAccountId": "[parameters('storageAccountId')]",
                           "logs": [
@@ -122,12 +125,12 @@
       "properties": {
         "displayName": "[parameters('policyDisplayName')]",
         "description": "[parameters('policyDescription')]",
-        "policyDefinitionId": "[extensionResourceId(managementGroup().id, 'Microsoft.Authorization/policyDefinitions', parameters('policyName'))]",
+        "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', parameters('policyName'))]",
         "scope": "[parameters('scope')]",
         "enforcementMode": "Default"
       },
       "dependsOn": [
-        "[extensionResourceId(managementGroup().id, 'Microsoft.Authorization/policyDefinitions', parameters('policyName'))]"
+        "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', parameters('policyName'))]"
       ]
     }
   ]
